@@ -1,12 +1,25 @@
 import { useState, useEffect } from 'react';
-import Map from './components/Map';
+import { Map, IdentifyMode } from './components';
 import { CITIES, getProvinces } from './data/data';
 import type { FeatureCollection } from 'geojson';
+import { useGameLogic } from './hooks/useGameLogic';
 
 function App() {
   const [gameMode, setGameMode] = useState<string | null>(null);
   const [provinces, setProvinces] = useState<FeatureCollection | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Hook handles logic only when provinces are loaded and mode is selected
+  // We can pass 'identify' as default if mode is null, but it won't do anything until mode is set.
+  const { 
+    currentQuestion, 
+    handleAnswer, 
+    gameStatus, 
+    highlightedId 
+  } = useGameLogic({ 
+    provinces, 
+    mode: gameMode as 'identify' | 'recall' | 'locate' || 'identify' // Cast or default
+  });
 
   useEffect(() => {
     getProvinces().then(data => {
@@ -28,7 +41,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <header className="bg-red-600 text-white p-4 shadow-md">
+      <header className="bg-red-600 text-white p-4 shadow-md z-50 relative">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold">🇨🇦 Canadian Geography</h1>
           <nav>
@@ -42,7 +55,7 @@ function App() {
         </div>
       </header>
 
-      <main className="flex-grow container mx-auto p-4">
+      <main className="flex-grow container mx-auto p-4 relative">
         {!gameMode ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
             {/* Game Mode Selection Cards */}
@@ -51,6 +64,7 @@ function App() {
               description="Learn to identify provinces and capitals."
               onClick={() => setGameMode('identify')}
             />
+            {/* ... other cards ... */}
             <ModeCard 
               title="Recall" 
               description="Type the names of cities and provinces."
@@ -63,17 +77,26 @@ function App() {
             />
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-lg p-6 h-full">
-            <h2 className="text-xl font-bold mb-4 capitalize">{gameMode} Mode</h2>
-            <div className="h-96 bg-blue-50 flex items-center justify-center border-2 border-dashed border-blue-200 text-blue-400 overflow-hidden relative">
-               <Map 
+          <div className="bg-white rounded-lg shadow-lg p-0 md:p-1 h-[80vh] overflow-hidden relative border border-slate-200">
+             {/* Map takes full space of the container */}
+             <Map 
                  cities={CITIES} 
-                 provinces={provinces} 
+                 provinces={provinces}
+                 highlightedProvinceId={gameMode === 'identify' ? (highlightedId || undefined) : undefined}
+             />
+             
+             {/* Overlays based on Mode */}
+             {gameMode === 'identify' && (
+               <IdentifyMode 
+                 question={currentQuestion} 
+                 onAnswer={handleAnswer} 
+                 gameStatus={gameStatus} 
                />
-               <div className="absolute top-2 right-2 bg-white/80 p-2 rounded text-xs text-slate-500 pointer-events-none">
-                 mode: {gameMode}
-               </div>
-            </div>
+             )}
+
+             <div className="absolute top-4 right-4 bg-white/90 backdrop-blur p-2 px-4 rounded-full shadow-md text-sm font-bold text-slate-600 pointer-events-none z-[400]">
+                 {gameMode.toUpperCase()} MODE
+             </div>
           </div>
         )}
       </main>

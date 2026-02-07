@@ -28,7 +28,7 @@ interface MapProps {
 const CANADA_CENTER: LatLngExpression = [60.10867, -113.64258]; // Approximate center
 const ZOOM_LEVEL = 3;
 
-export default function CanadaMap({ provinces, cities, onProvinceClick, onCityClick }: MapProps) {
+export default function CanadaMap({ provinces, cities, onProvinceClick, onCityClick, highlightedProvinceId }: MapProps) {
   return (
     <MapContainer 
       center={CANADA_CENTER} 
@@ -42,20 +42,55 @@ export default function CanadaMap({ provinces, cities, onProvinceClick, onCityCl
       />
       
       {/* Provinces Layer */}
-      {provinces && <GeoJSON data={provinces} />}
+      {provinces && (
+        <GeoJSON 
+          data={provinces} 
+          style={(feature) => {
+             const props = feature?.properties || {};
+             const id = props.id || props.PRUID || props.name;
+             const isHighlighted = highlightedProvinceId && (id === highlightedProvinceId || props.name === highlightedProvinceId);
+             
+             return {
+               fillColor: isHighlighted ? '#ef4444' : '#ffffff',
+               weight: isHighlighted ? 3 : 1,
+               opacity: 1,
+               color: isHighlighted ? '#b91c1c' : '#94a3b8',
+               fillOpacity: isHighlighted ? 0.6 : 0.4
+             };
+          }}
+          onEachFeature={(feature, layer) => {
+             // For future interaction
+             layer.on({
+               click: () => {
+                 const props = feature.properties || {};
+                 const p: Province = {
+                    id: props.id || props.PRUID,
+                    name: props.name,
+                    type: 'Province', 
+                 };
+                 onProvinceClick?.(p);
+               }
+             });
+          }}
+        />
+      )}
 
       {/* Cities Layer */}
-      {cities?.map(city => (
+      {cities?.map(city => {
+        const isHighlighted = highlightedProvinceId === city.Name; // Reusing prop for city name too for now
+        
+        return (
         <Marker 
           key={city.Name} 
           position={[city.Latitude, city.Longitude]}
           eventHandlers={{
             click: () => onCityClick?.(city)
           }}
+          opacity={highlightedProvinceId ? (isHighlighted ? 1 : 0.5) : 1}
         >
           <Popup>{city.Name}</Popup>
         </Marker>
-      ))}
+      )})}
     </MapContainer>
   );
 }
