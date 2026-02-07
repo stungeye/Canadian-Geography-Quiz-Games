@@ -113,7 +113,7 @@ mapper/
 
 ## 📝 License
 
-This project is open source and available for educational purposes.
+This project is released into the public domain under the [Unlicense](file:///home/stungeye/programs/mapper/UNLICENSE). You are free to copy, modify, publish, use, compile, sell, or distribute this software for any purpose, commercial or non-commercial.
 
 ## 🙏 Acknowledgments
 
