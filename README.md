@@ -111,7 +111,7 @@ mapper/
 - Accessible color scheme with clear visual hierarchy
 - Mobile-friendly responsive layout
 
-## 📝 License
+## 📝 Unlicensed
 
 This project is released into the public domain under the [Unlicense](file:///home/stungeye/programs/mapper/UNLICENSE). You are free to copy, modify, publish, use, compile, sell, or distribute this software for any purpose, commercial or non-commercial.
 
@@ -120,3 +120,4 @@ This project is released into the public domain under the [Unlicense](file:///ho
 - Map data: Statistics Canada
 - Base map tiles: OpenStreetMap contributors + CARTO
 - Icons: Lucide React
+- Vibes: Antigravity IDE using Gemini 3 / Claude 4.5 Opus
