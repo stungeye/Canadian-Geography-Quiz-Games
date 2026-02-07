@@ -29,11 +29,16 @@ interface UseGameLogicProps {
   optionCount?: number; 
 }
 
+import { useFeedback } from './useFeedback';
+
 export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicProps) {
   const [score, setScore] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [gameStatus, setGameStatus] = useState<'playing' | 'correct' | 'incorrect' | 'finished'>('playing');
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+
+  // --- Feedback ---
+  const { triggerSuccess, triggerFailure } = useFeedback();
 
   // --- Mode 2: Recall State ---
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
@@ -104,11 +109,13 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
     if (answer === currentQuestion.targetName) {
       setGameStatus('correct');
       setScore(s => s + 1);
+      triggerSuccess();
       setTimeout(() => {
         generateIdentifyQuestion();
       }, 1500);
     } else {
       setGameStatus('incorrect');
+      triggerFailure();
        setTimeout(() => {
         generateIdentifyQuestion();
       }, 1500);
@@ -130,11 +137,13 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
     if (inputName.trim().toLowerCase() === activeTarget.Name.toLowerCase()) {
       setCompletedIds(prev => new Set(prev).add(activeTarget.Name));
       setScore(s => s + 1);
+      triggerSuccess();
       setActiveTarget(null); // Close dialog
       // If all done? Check length.
     } else {
       // Incorrect logic: "shown corrections for which they got incorrect"
       // Maybe shake input?
+      triggerFailure();
       alert(`Incorrect! That was NOT ${inputName}.`); // Temporary feedback
     }
   };
