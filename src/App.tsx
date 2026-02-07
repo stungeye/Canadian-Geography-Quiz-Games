@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Map, IdentifyMode, RecallMode } from './components';
+import { Map, IdentifyMode, RecallMode, LocateMode } from './components';
 import { CITIES, getProvinces } from './data/data';
 import type { FeatureCollection } from 'geojson';
 import { useGameLogic } from './hooks/useGameLogic';
@@ -13,6 +13,7 @@ function App() {
   const { 
     currentQuestion, 
     handleAnswer, 
+    handleLocationAnswer,
     gameStatus, 
     highlightedId,
     // Recall
@@ -89,9 +90,8 @@ function App() {
                  provinces={provinces}
                  highlightedProvinceId={gameMode === 'identify' ? (highlightedId || undefined) : undefined}
                  completedIds={gameMode === 'recall' ? completedIds : undefined}
-                 onCityClick={gameMode === 'recall' ? handleRecallSelect : undefined}
-                 // activeTarget could be highlighting? 
-                 // For now, let's just use Map's default behavior or add a new prop later if needed
+                 onCityClick={gameMode === 'recall' ? handleRecallSelect : (gameMode === 'locate' ? handleLocationAnswer : undefined)}
+                 onProvinceClick={gameMode === 'locate' ? handleLocationAnswer : undefined}
              />
              
              {/* Identify Overlay */}
@@ -109,6 +109,14 @@ function App() {
                   target={activeTarget}
                   onSubmit={handleRecallSubmit}
                   onCancel={onCancelRecall}
+                />
+             )}
+
+             {/* Locate Mode Overlay */}
+             {gameMode === 'locate' && (
+                <LocateMode 
+                   question={currentQuestion}
+                   gameStatus={gameStatus}
                 />
              )}
 

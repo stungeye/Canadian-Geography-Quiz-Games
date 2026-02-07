@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
-import { City } from '../types';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { City, Province } from '../types';
 import { CITIES } from '../data/data';
 import type { FeatureCollection, Feature } from 'geojson';
 
@@ -94,12 +94,54 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
     setGameStatus('playing');
   }, [provinces, optionCount]);
 
+  // --- Mode 3: Location Logic ---
+  const generateLocationQuestion = useCallback(() => {
+    if (!provinces) return;
+    const isProvince = Math.random() > 0.5;
+
+    if (isProvince) {
+      const provinceFeatures = provinces.features as Feature[];
+      if (provinceFeatures.length === 0) return;
+      const targetFeature = provinceFeatures[Math.floor(Math.random() * provinceFeatures.length)];
+      const props = targetFeature.properties || {};
+      const targetName = props.name || props.PRENAME || "Unknown";
+      const targetId = props.id || props.PRUID || targetName; 
+
+      setCurrentQuestion({
+        type: 'province',
+        targetId,
+        targetName,
+        options: [] // No options needed for location mode
+      });
+    } else {
+       const target = CITIES[Math.floor(Math.random() * CITIES.length)];
+       setCurrentQuestion({
+         type: 'city',
+         targetId: target.Name, // Using Name as ID for cities
+         targetName: target.Name,
+         options: [] 
+       });
+    }
+    setGameStatus('playing');
+    setHighlightedId(null); // No highlighting in location mode!
+  }, [provinces]);
+
   // --- Initializer ---
   useEffect(() => {
-    if (provinces && mode === 'identify' && !currentQuestion) {
-      generateIdentifyQuestion();
+    if (provinces && !currentQuestion) {
+      if (mode === 'identify') generateIdentifyQuestion();
+      if (mode === 'locate') generateLocationQuestion();
     }
-  }, [provinces, mode, currentQuestion, generateIdentifyQuestion]);
+    // Reset when mode changes
+    if (mode !== gameModeRef.current) {
+        if (mode === 'identify') generateIdentifyQuestion();
+        if (mode === 'locate') generateLocationQuestion();
+        gameModeRef.current = mode;
+    }
+  }, [provinces, mode, generateIdentifyQuestion, generateLocationQuestion]);
+
+  // Use ref to track mode changes to trigger regen
+  const gameModeRef = useRef(mode);
 
 
   // --- Handlers ---
@@ -122,12 +164,46 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
     }
   };
 
+  const handleLocationAnswer = (selected: Province | City) => {
+      if (mode !== 'locate' || !currentQuestion || gameStatus !== 'playing') return;
+
+      let isCorrect = false;
+      if ('type' in selected && selected.type === 'Province') {
+          // It's a province
+          // Check ID or Name
+          isCorrect = currentQuestion.type === 'province' && (selected.id === currentQuestion.targetId || selected.name === currentQuestion.targetName);
+      } else if ('Name' in selected) {
+          // It's a city
+          isCorrect = currentQuestion.type === 'city' && selected.Name === currentQuestion.targetName;
+      }
+
+      if (isCorrect) {
+          setGameStatus('correct');
+          setScore(s => s + 1);
+          triggerSuccess();
+          setTimeout(() => {
+            generateLocationQuestion();
+          }, 1500);
+      } else {
+          setGameStatus('incorrect');
+          triggerFailure();
+          // Maybe highlight the correct one momentarily? 
+          setHighlightedId(currentQuestion.targetId); 
+          setTimeout(() => {
+             setHighlightedId(null);
+             generateLocationQuestion();
+          }, 1500);
+      }
+  }
+
   const handleRecallSelect = (city: City) => {
     // In Recall mode, user clicks a city marker
     if (mode === 'recall') {
        setActiveTarget(city);
     }
   };
+   
+  // ... recall submit ...
 
   const handleRecallSubmit = (inputName: string) => {
     if (!activeTarget) return;
@@ -154,6 +230,7 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
     gameStatus,
     highlightedId,
     handleAnswer: handleIdentifyAnswer,
+    handleLocationAnswer,
     
     // Recall specific
     handleRecallSelect,
