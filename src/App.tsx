@@ -120,6 +120,30 @@ function App() {
                 />
              )}
 
+             {/* Victory Overlay */}
+             {gameStatus === 'finished' && (
+               <div className="absolute inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                 <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-md mx-4 animate-bounce-in">
+                   <div className="text-6xl mb-4">🎉</div>
+                   <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-500 via-blue-500 to-purple-500 mb-2">
+                     Congratulations!
+                   </h2>
+                   <p className="text-lg text-slate-600 mb-4">
+                     You've identified all {foundIds.size} locations!
+                   </p>
+                   <p className="text-sm text-slate-400 mb-6">
+                     You're a Canadian geography expert! 🍁
+                   </p>
+                   <button 
+                     onClick={() => setGameMode(null)}
+                     className="px-6 py-3 bg-gradient-to-r from-green-500 to-blue-500 text-white font-bold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+                   >
+                     Play Again
+                   </button>
+                 </div>
+               </div>
+             )}
+
              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur p-2 px-4 rounded-full shadow-md text-sm font-bold text-slate-600 pointer-events-none z-[400]">
                  {gameMode.toUpperCase()} MODE
                  {gameMode !== 'identify' && <span className="ml-2 text-green-600">({foundIds.size} found)</span>}

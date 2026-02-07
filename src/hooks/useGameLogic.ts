@@ -46,7 +46,7 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
   useEffect(() => { currentQuestionRef.current = currentQuestion; }, [currentQuestion]);
 
   // --- Feedback ---
-  const { triggerSuccess, triggerFailure } = useFeedback();
+  const { triggerSuccess, triggerFailure, triggerVictory } = useFeedback();
 
   // --- Mode 2: Recall State ---
   const [foundIds, setFoundIds] = useState<Set<string>>(new Set());
@@ -82,6 +82,7 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
         setGameStatus('finished');
         setHighlightedId(null);
         setCurrentQuestion(null);
+        triggerVictory();
         return;
     }
 
@@ -164,6 +165,7 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
         setGameStatus('finished');
         setHighlightedId(null);
         setCurrentQuestion(null);
+        triggerVictory();
         return;
     }
 
