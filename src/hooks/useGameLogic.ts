@@ -1,20 +1,32 @@
 import { useState, useCallback, useEffect } from 'react';
+import { City } from '../types';
 import { CITIES } from '../data/data';
 import type { FeatureCollection, Feature } from 'geojson';
+
+// --- Types ---
 
 type QuestionType = 'province' | 'city';
 
 export interface Question {
   type: QuestionType;
-  targetId: string; // Province ID (e.g. 'ON') or City Name ('Ottawa')
-  targetName: string; // Display name
-  options: string[]; // List of names to choose from
+  targetId: string; 
+  targetName: string; 
+  options: string[]; 
+}
+
+interface RecallState {
+  completedIds: Set<string>; // IDs of cities/provinces correctly named
+  currentInput: string;
+  targetCity: City | null; // The city currently being asked about (if we do one by one, but spec says "tap each in turn")
+  // Actually spec: "User must tap each in turn and type in their name." 
+  // So we need to potentialy track which one is tapped.
+  activeTarget: City | null;
 }
 
 interface UseGameLogicProps {
   provinces: FeatureCollection | null;
   mode: 'identify' | 'recall' | 'locate';
-  optionCount?: number; // N possibilities
+  optionCount?: number; 
 }
 
 export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicProps) {
@@ -23,11 +35,13 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
   const [gameStatus, setGameStatus] = useState<'playing' | 'correct' | 'incorrect' | 'finished'>('playing');
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
-  const generateQuestion = useCallback(() => {
-    if (!provinces) return;
+  // --- Mode 2: Recall State ---
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [activeTarget, setActiveTarget] = useState<City | null>(null);
 
-    // Random choice: Province or City?
-    // Let's bias slightly towards Provinces initially if we want, or pure random.
+  // --- Mode 1 Logic ---
+  const generateIdentifyQuestion = useCallback(() => {
+    if (!provinces) return;
     const isProvince = Math.random() > 0.5;
     
     if (isProvince) {
@@ -36,11 +50,10 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
 
       const targetFeature = provinceFeatures[Math.floor(Math.random() * provinceFeatures.length)];
       const props = targetFeature.properties || {};
-      const targetName = props.name || props.PRENAME || "Unknown"; // Shapefile might have PRENAME
+      const targetName = props.name || props.PRENAME || "Unknown"; 
       const targetId = props.id || props.PRUID || targetName; 
 
       const allNames = provinceFeatures.map(f => f.properties?.name || f.properties?.PRENAME).filter(Boolean);
-      // Filter out unique names for options
       const uniqueNames = Array.from(new Set(allNames));
       
       const options = shuffle([
@@ -57,7 +70,6 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
       setHighlightedId(targetId);
 
     } else {
-       // City Question
        const target = CITIES[Math.floor(Math.random() * CITIES.length)];
        const allNames = CITIES.map(c => c.Name);
        
@@ -77,33 +89,53 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
     setGameStatus('playing');
   }, [provinces, optionCount]);
 
-  // Initial start
+  // --- Initializer ---
   useEffect(() => {
-    if (provinces && !currentQuestion) {
-      generateQuestion();
+    if (provinces && mode === 'identify' && !currentQuestion) {
+      generateIdentifyQuestion();
     }
-  }, [provinces, currentQuestion, generateQuestion]);
+  }, [provinces, mode, currentQuestion, generateIdentifyQuestion]);
 
-  const handleAnswer = (answer: string) => {
+
+  // --- Handlers ---
+  const handleIdentifyAnswer = (answer: string) => {
     if (!currentQuestion || gameStatus !== 'playing') return;
 
     if (answer === currentQuestion.targetName) {
       setGameStatus('correct');
       setScore(s => s + 1);
       setTimeout(() => {
-        generateQuestion();
+        generateIdentifyQuestion();
       }, 1500);
     } else {
       setGameStatus('incorrect');
-      // Simple logic: Incorrect ends the attempt for this question? 
-      // Or lets them retry? "Incorrect selections go to end of queue" applies to Mode 3.
-      // Mode 1 spec: "Select the correct one from N possibilities". 
-      // Doesn't specify penalty or retry. Let's assume standard quiz style -> show Correct, then next.
-      // If we want to implement "Scored immediately", we might just move on.
-      // Let's move on after a brief delay so they see they were wrong.
        setTimeout(() => {
-        generateQuestion();
+        generateIdentifyQuestion();
       }, 1500);
+    }
+  };
+
+  const handleRecallSelect = (city: City) => {
+    // In Recall mode, user clicks a city marker
+    if (mode === 'recall') {
+       setActiveTarget(city);
+    }
+  };
+
+  const handleRecallSubmit = (inputName: string) => {
+    if (!activeTarget) return;
+
+    // Fuzzy match or exact? Spec says "type in their name". 
+    // Let's do case-insensitive exact match for now.
+    if (inputName.trim().toLowerCase() === activeTarget.Name.toLowerCase()) {
+      setCompletedIds(prev => new Set(prev).add(activeTarget.Name));
+      setScore(s => s + 1);
+      setActiveTarget(null); // Close dialog
+      // If all done? Check length.
+    } else {
+      // Incorrect logic: "shown corrections for which they got incorrect"
+      // Maybe shake input?
+      alert(`Incorrect! That was NOT ${inputName}.`); // Temporary feedback
     }
   };
 
@@ -112,8 +144,16 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
     currentQuestion,
     gameStatus,
     highlightedId,
-    handleAnswer,
-    nextQuestion: generateQuestion
+    handleAnswer: handleIdentifyAnswer,
+    
+    // Recall specific
+    handleRecallSelect,
+    handleRecallSubmit,
+    activeTarget,
+    completedIds,
+    onCancelRecall: () => setActiveTarget(null),
+    
+    nextQuestion: generateIdentifyQuestion
   };
 }
 
@@ -123,7 +163,6 @@ function shuffle(array: any[]) {
 }
 
 function getRandomElements(arr: any[], n: number) {
-  // Simple random selection
   const shuffled = [...arr].sort(() => 0.5 - Math.random());
   return shuffled.slice(0, n);
 }

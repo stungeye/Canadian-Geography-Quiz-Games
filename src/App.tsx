@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Map, IdentifyMode } from './components';
+import { Map, IdentifyMode, RecallMode } from './components';
 import { CITIES, getProvinces } from './data/data';
 import type { FeatureCollection } from 'geojson';
 import { useGameLogic } from './hooks/useGameLogic';
@@ -10,15 +10,20 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   // Hook handles logic only when provinces are loaded and mode is selected
-  // We can pass 'identify' as default if mode is null, but it won't do anything until mode is set.
   const { 
     currentQuestion, 
     handleAnswer, 
     gameStatus, 
-    highlightedId 
+    highlightedId,
+    // Recall
+    handleRecallSelect,
+    handleRecallSubmit,
+    activeTarget,
+    onCancelRecall,
+    completedIds
   } = useGameLogic({ 
     provinces, 
-    mode: gameMode as 'identify' | 'recall' | 'locate' || 'identify' // Cast or default
+    mode: gameMode as 'identify' | 'recall' | 'locate' || 'identify' 
   });
 
   useEffect(() => {
@@ -83,9 +88,13 @@ function App() {
                  cities={CITIES} 
                  provinces={provinces}
                  highlightedProvinceId={gameMode === 'identify' ? (highlightedId || undefined) : undefined}
+                 completedIds={gameMode === 'recall' ? completedIds : undefined}
+                 onCityClick={gameMode === 'recall' ? handleRecallSelect : undefined}
+                 // activeTarget could be highlighting? 
+                 // For now, let's just use Map's default behavior or add a new prop later if needed
              />
              
-             {/* Overlays based on Mode */}
+             {/* Identify Overlay */}
              {gameMode === 'identify' && (
                <IdentifyMode 
                  question={currentQuestion} 
@@ -94,8 +103,18 @@ function App() {
                />
              )}
 
+             {/* Recall Overlay */}
+             {gameMode === 'recall' && activeTarget && (
+                <RecallMode 
+                  target={activeTarget}
+                  onSubmit={handleRecallSubmit}
+                  onCancel={onCancelRecall}
+                />
+             )}
+
              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur p-2 px-4 rounded-full shadow-md text-sm font-bold text-slate-600 pointer-events-none z-[400]">
                  {gameMode.toUpperCase()} MODE
+                 {gameMode === 'recall' && <span className="ml-2 text-green-600">({completedIds.size} found)</span>}
              </div>
           </div>
         )}

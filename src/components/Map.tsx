@@ -23,12 +23,13 @@ interface MapProps {
   onProvinceClick?: (province: Province) => void;
   onCityClick?: (city: City) => void;
   highlightedProvinceId?: string;
+  completedIds?: Set<string>;
 }
 
 const CANADA_CENTER: LatLngExpression = [60.10867, -113.64258]; // Approximate center
 const ZOOM_LEVEL = 3;
 
-export default function CanadaMap({ provinces, cities, onProvinceClick, onCityClick, highlightedProvinceId }: MapProps) {
+export default function CanadaMap({ provinces, cities, onProvinceClick, onCityClick, highlightedProvinceId, completedIds }: MapProps) {
   return (
     <MapContainer 
       center={CANADA_CENTER} 
@@ -50,12 +51,18 @@ export default function CanadaMap({ provinces, cities, onProvinceClick, onCityCl
              const id = props.id || props.PRUID || props.name;
              const isHighlighted = highlightedProvinceId && (id === highlightedProvinceId || props.name === highlightedProvinceId);
              
+             // Check if completed (for future Province Recall)
+             // For now Recall mode is "Cities" based on spec? "The user must tap each in turn and type in their name."
+             // Spec says "When all provinces, territories, and cities have been input..."
+             // So we should track provinces too.
+             const isCompleted = completedIds?.has(props.name);
+
              return {
-               fillColor: isHighlighted ? '#ef4444' : '#ffffff',
+               fillColor: isHighlighted ? '#ef4444' : (isCompleted ? '#22c55e' : '#ffffff'),
                weight: isHighlighted ? 3 : 1,
                opacity: 1,
                color: isHighlighted ? '#b91c1c' : '#94a3b8',
-               fillOpacity: isHighlighted ? 0.6 : 0.4
+               fillOpacity: isHighlighted ? 0.6 : (isCompleted ? 0.6 : 0.4)
              };
           }}
           onEachFeature={(feature, layer) => {
@@ -77,7 +84,10 @@ export default function CanadaMap({ provinces, cities, onProvinceClick, onCityCl
 
       {/* Cities Layer */}
       {cities?.map(city => {
-        const isHighlighted = highlightedProvinceId === city.Name; // Reusing prop for city name too for now
+        const isHighlighted = highlightedProvinceId === city.Name; 
+        const isCompleted = completedIds?.has(city.Name);
+        
+        // Todo: Custom icons for stars vs dots
         
         return (
         <Marker 
@@ -86,9 +96,11 @@ export default function CanadaMap({ provinces, cities, onProvinceClick, onCityCl
           eventHandlers={{
             click: () => onCityClick?.(city)
           }}
-          opacity={highlightedProvinceId ? (isHighlighted ? 1 : 0.5) : 1}
+          opacity={isCompleted ? 0.8 : (highlightedProvinceId ? (isHighlighted ? 1 : 0.5) : 1)}
+          title={isCompleted ? `${city.Name} (Found)` : "Unknown"}
         >
-          <Popup>{city.Name}</Popup>
+          {/* Show name only if completed or if Identify mode reveals it */}
+          {(!onCityClick || isCompleted) && <Popup>{city.Name}</Popup>}
         </Marker>
       )})}
     </MapContainer>
