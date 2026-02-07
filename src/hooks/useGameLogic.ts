@@ -41,8 +41,8 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
   const { triggerSuccess, triggerFailure } = useFeedback();
 
   // --- Mode 2: Recall State ---
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
-  const [activeTarget, setActiveTarget] = useState<City | null>(null);
+  const [foundIds, setFoundIds] = useState<Set<string>>(new Set());
+  const [activeTarget, setActiveTarget] = useState<City | Province | null>(null);
 
   // --- Mode 1 Logic ---
   const generateIdentifyQuestion = useCallback(() => {
@@ -102,6 +102,7 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
     if (isProvince) {
       const provinceFeatures = provinces.features as Feature[];
       if (provinceFeatures.length === 0) return;
+      // Filter out already found provinces if possible? For now random is fine.
       const targetFeature = provinceFeatures[Math.floor(Math.random() * provinceFeatures.length)];
       const props = targetFeature.properties || {};
       const targetName = props.name || props.PRENAME || "Unknown";
@@ -111,19 +112,19 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
         type: 'province',
         targetId,
         targetName,
-        options: [] // No options needed for location mode
+        options: [] 
       });
     } else {
        const target = CITIES[Math.floor(Math.random() * CITIES.length)];
        setCurrentQuestion({
          type: 'city',
-         targetId: target.Name, // Using Name as ID for cities
+         targetId: target.Name, 
          targetName: target.Name,
          options: [] 
        });
     }
     setGameStatus('playing');
-    setHighlightedId(null); // No highlighting in location mode!
+    setHighlightedId(null); 
   }, [provinces]);
 
   // --- Initializer ---
@@ -136,11 +137,15 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
     if (mode !== gameModeRef.current) {
         if (mode === 'identify') generateIdentifyQuestion();
         if (mode === 'locate') generateLocationQuestion();
+        // Reset found state on mode change? Or persist? 
+        // User implied "in this mode cities that have already been selected". 
+        // Let's reset for now to simulate a fresh game per mode, or keep it if they switch back and forth?
+        // Usually games reset.
+        setFoundIds(new Set());
         gameModeRef.current = mode;
     }
   }, [provinces, mode, generateIdentifyQuestion, generateLocationQuestion]);
 
-  // Use ref to track mode changes to trigger regen
   const gameModeRef = useRef(mode);
 
 
@@ -151,6 +156,15 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
     if (answer === currentQuestion.targetName) {
       setGameStatus('correct');
       setScore(s => s + 1);
+      // Add to found
+      if (currentQuestion.type === 'city') {
+          setFoundIds(prev => new Set(prev).add(currentQuestion.targetName));
+      } else {
+          // For province, targetId might be ID or Name. Let's use Name for consistency in foundIds if possible
+          // But Map uses Name to check found status.
+          setFoundIds(prev => new Set(prev).add(currentQuestion.targetName));
+      }
+      
       triggerSuccess();
       setTimeout(() => {
         generateIdentifyQuestion();
@@ -167,19 +181,24 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
   const handleLocationAnswer = (selected: Province | City) => {
       if (mode !== 'locate' || !currentQuestion || gameStatus !== 'playing') return;
 
+      // Check if already found?
+      let selectedName = '';
+      if ('type' in selected && selected.type === 'Province') selectedName = selected.name;
+      else if ('Name' in selected) selectedName = selected.Name;
+
+      if (foundIds.has(selectedName)) return; // Ignor clicks on already found items
+
       let isCorrect = false;
       if ('type' in selected && selected.type === 'Province') {
-          // It's a province
-          // Check ID or Name
           isCorrect = currentQuestion.type === 'province' && (selected.id === currentQuestion.targetId || selected.name === currentQuestion.targetName);
       } else if ('Name' in selected) {
-          // It's a city
           isCorrect = currentQuestion.type === 'city' && selected.Name === currentQuestion.targetName;
       }
 
       if (isCorrect) {
           setGameStatus('correct');
           setScore(s => s + 1);
+          setFoundIds(prev => new Set(prev).add(selectedName));
           triggerSuccess();
           setTimeout(() => {
             generateLocationQuestion();
@@ -187,7 +206,6 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
       } else {
           setGameStatus('incorrect');
           triggerFailure();
-          // Maybe highlight the correct one momentarily? 
           setHighlightedId(currentQuestion.targetId); 
           setTimeout(() => {
              setHighlightedId(null);
@@ -196,31 +214,34 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
       }
   }
 
-  const handleRecallSelect = (city: City) => {
-    // In Recall mode, user clicks a city marker
-    if (mode === 'recall') {
-       setActiveTarget(city);
-    }
+  const handleRecallSelect = (item: City | Province) => {
+    if (mode !== 'recall') return;
+    
+    // Check if already found
+    let name = '';
+    if ('type' in item) name = item.name;
+    else name = item.Name;
+
+    if (foundIds.has(name)) return;
+
+    setActiveTarget(item);
   };
-   
-  // ... recall submit ...
 
   const handleRecallSubmit = (inputName: string) => {
     if (!activeTarget) return;
 
-    // Fuzzy match or exact? Spec says "type in their name". 
-    // Let's do case-insensitive exact match for now.
-    if (inputName.trim().toLowerCase() === activeTarget.Name.toLowerCase()) {
-      setCompletedIds(prev => new Set(prev).add(activeTarget.Name));
+    let targetName = '';
+    if ('type' in activeTarget) targetName = activeTarget.name;
+    else targetName = activeTarget.Name;
+
+    if (inputName.trim().toLowerCase() === targetName.toLowerCase()) {
+      setFoundIds(prev => new Set(prev).add(targetName));
       setScore(s => s + 1);
       triggerSuccess();
-      setActiveTarget(null); // Close dialog
-      // If all done? Check length.
+      setActiveTarget(null); 
     } else {
-      // Incorrect logic: "shown corrections for which they got incorrect"
-      // Maybe shake input?
       triggerFailure();
-      alert(`Incorrect! That was NOT ${inputName}.`); // Temporary feedback
+      alert(`Incorrect! That was NOT ${inputName}.`); 
     }
   };
 
@@ -236,7 +257,7 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
     handleRecallSelect,
     handleRecallSubmit,
     activeTarget,
-    completedIds,
+    foundIds,
     onCancelRecall: () => setActiveTarget(null),
     
     nextQuestion: generateIdentifyQuestion

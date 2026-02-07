@@ -21,7 +21,7 @@ function App() {
     handleRecallSubmit,
     activeTarget,
     onCancelRecall,
-    completedIds
+    foundIds
   } = useGameLogic({ 
     provinces, 
     mode: gameMode as 'identify' | 'recall' | 'locate' || 'identify' 
@@ -89,9 +89,9 @@ function App() {
                  cities={CITIES} 
                  provinces={provinces}
                  highlightedProvinceId={gameMode === 'identify' ? (highlightedId || undefined) : undefined}
-                 completedIds={gameMode === 'recall' ? completedIds : undefined}
+                 foundIds={foundIds}
                  onCityClick={gameMode === 'recall' ? handleRecallSelect : (gameMode === 'locate' ? handleLocationAnswer : undefined)}
-                 onProvinceClick={gameMode === 'locate' ? handleLocationAnswer : undefined}
+                 onProvinceClick={gameMode === 'recall' ? handleRecallSelect : (gameMode === 'locate' ? handleLocationAnswer : undefined)}
              />
              
              {/* Identify Overlay */}
@@ -122,7 +122,7 @@ function App() {
 
              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur p-2 px-4 rounded-full shadow-md text-sm font-bold text-slate-600 pointer-events-none z-[400]">
                  {gameMode.toUpperCase()} MODE
-                 {gameMode === 'recall' && <span className="ml-2 text-green-600">({completedIds.size} found)</span>}
+                 {gameMode !== 'identify' && <span className="ml-2 text-green-600">({foundIds.size} found)</span>}
              </div>
           </div>
         )}
