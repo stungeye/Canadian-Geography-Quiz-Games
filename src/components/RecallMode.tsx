@@ -14,11 +14,9 @@ export default function RecallMode({ target, onSubmit, onCancel }: RecallModePro
 
   const targetName = 'type' in target ? target.name : target.Name; 
   const locationType = 'type' in target ? 'Province/Territory' : 'City';
-  // Note: we probably shouldn't show the name if we want them to guess it!
-  // Wait, the prompt is "Name this City". 
-  // We can show "Located in [Province]" for cities, but for provinces?
   
-  const hint = 'type' in target ? 'Recall this region' : `Located in ${target.Prov_Ter}`;
+  // Generic hint - don't reveal province for cities
+  const hint = 'type' in target ? 'Recall this region' : 'What is the name of this city?';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

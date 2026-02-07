@@ -37,6 +37,14 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
   const [gameStatus, setGameStatus] = useState<'playing' | 'correct' | 'incorrect' | 'finished'>('playing');
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
+  // --- Refs for current values (to avoid stale closures in callbacks) ---
+  const gameStatusRef = useRef(gameStatus);
+  const currentQuestionRef = useRef(currentQuestion);
+  const foundIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => { gameStatusRef.current = gameStatus; }, [gameStatus]);
+  useEffect(() => { currentQuestionRef.current = currentQuestion; }, [currentQuestion]);
+
   // --- Feedback ---
   const { triggerSuccess, triggerFailure } = useFeedback();
 
@@ -44,19 +52,31 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
   const [foundIds, setFoundIds] = useState<Set<string>>(new Set());
   const [activeTarget, setActiveTarget] = useState<City | Province | null>(null);
 
+  // Keep foundIds ref in sync
+  useEffect(() => { foundIdsRef.current = foundIds; }, [foundIds]);
+
   // --- Mode 1 Logic ---
   const generateIdentifyQuestion = useCallback(() => {
     if (!provinces) return;
+
+    // Use ref to get current foundIds (avoids stale closure in setTimeout)
+    const currentFoundIds = foundIdsRef.current;
 
     // Filter out found items
     const provinceFeatures = provinces.features as Feature[];
     const validProvinces = provinceFeatures.filter(f => {
         const props = f.properties || {};
         const name = props.name || props.PRENAME || "Unknown";
-        return !foundIds.has(name);
+        return !currentFoundIds.has(name);
     });
 
-    const validCities = CITIES.filter(c => !foundIds.has(c.Name));
+    const validCities = CITIES.filter(c => !currentFoundIds.has(c.Name));
+
+    console.log('generateIdentifyQuestion:', { 
+        foundCount: currentFoundIds.size, 
+        validProvinces: validProvinces.length, 
+        validCities: validCities.length 
+    });
 
     if (validProvinces.length === 0 && validCities.length === 0) {
         setGameStatus('finished');
@@ -115,18 +135,50 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
        setHighlightedId(target.Name);
     }
     setGameStatus('playing');
-  }, [provinces, optionCount, foundIds]);
+  }, [provinces, optionCount]);
 
   // --- Mode 3: Location Logic ---
   const generateLocationQuestion = useCallback(() => {
     if (!provinces) return;
-    const isProvince = Math.random() > 0.5;
+
+    // Use ref to get current foundIds (avoids stale closure in setTimeout)
+    const currentFoundIds = foundIdsRef.current;
+
+    // Filter out found items
+    const provinceFeatures = provinces.features as Feature[];
+    const validProvinces = provinceFeatures.filter(f => {
+        const props = f.properties || {};
+        const name = props.name || props.PRENAME || "Unknown";
+        return !currentFoundIds.has(name);
+    });
+
+    const validCities = CITIES.filter(c => !currentFoundIds.has(c.Name));
+
+    console.log('generateLocationQuestion:', { 
+        foundCount: currentFoundIds.size, 
+        validProvinces: validProvinces.length, 
+        validCities: validCities.length 
+    });
+
+    if (validProvinces.length === 0 && validCities.length === 0) {
+        setGameStatus('finished');
+        setHighlightedId(null);
+        setCurrentQuestion(null);
+        return;
+    }
+
+    // Decide type based on availability
+    let isProvince = false;
+    if (validProvinces.length > 0 && validCities.length > 0) {
+        isProvince = Math.random() > 0.5;
+    } else if (validProvinces.length > 0) {
+        isProvince = true;
+    } else {
+        isProvince = false;
+    }
 
     if (isProvince) {
-      const provinceFeatures = provinces.features as Feature[];
-      if (provinceFeatures.length === 0) return;
-      // Filter out already found provinces if possible? For now random is fine.
-      const targetFeature = provinceFeatures[Math.floor(Math.random() * provinceFeatures.length)];
+      const targetFeature = validProvinces[Math.floor(Math.random() * validProvinces.length)];
       const props = targetFeature.properties || {};
       const targetName = props.name || props.PRENAME || "Unknown";
       const targetId = props.id || props.PRUID || targetName; 
@@ -138,7 +190,7 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
         options: [] 
       });
     } else {
-       const target = CITIES[Math.floor(Math.random() * CITIES.length)];
+       const target = validCities[Math.floor(Math.random() * validCities.length)];
        setCurrentQuestion({
          type: 'city',
          targetId: target.Name, 
@@ -202,30 +254,37 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
   };
 
   const handleLocationAnswer = (selected: Province | City) => {
-      if (mode !== 'locate' || !currentQuestion || gameStatus !== 'playing') return;
+      const status = gameStatusRef.current;
+      const question = currentQuestionRef.current;
+      
+      console.log('handleLocationAnswer called', { mode, status, question, selected });
+      if (mode !== 'locate' || !question || status !== 'playing') {
+          console.log('handleLocationAnswer early return', { mode, status, hasQuestion: !!question });
+          return;
+      }
 
       // Check if already found?
       let selectedName = '';
       if ('type' in selected && selected.type === 'Province') selectedName = selected.name;
       else if ('Name' in selected) selectedName = selected.Name;
 
-      if (foundIds.has(selectedName)) return; // Ignor clicks on already found items
+      if (foundIdsRef.current.has(selectedName)) return; // Ignore clicks on already found items
 
       console.log('Mode 3 Check:', { 
         selected, 
-        currentQuestion 
+        question 
       });
 
       let isCorrect = false;
       if ('type' in selected && selected.type === 'Province') {
           // Relaxed check: name OR ID match (case-insensitive for name?)
           // Also check PRENAME in case props differ?
-          isCorrect = currentQuestion.type === 'province' && (
-              String(selected.id) === String(currentQuestion.targetId) || 
-              selected.name === currentQuestion.targetName
+          isCorrect = question.type === 'province' && (
+              String(selected.id) === String(question.targetId) || 
+              selected.name === question.targetName
           );
       } else if ('Name' in selected) {
-          isCorrect = currentQuestion.type === 'city' && selected.Name === currentQuestion.targetName;
+          isCorrect = question.type === 'city' && selected.Name === question.targetName;
       }
 
       if (isCorrect) {
@@ -239,7 +298,7 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
       } else {
           setGameStatus('incorrect');
           triggerFailure();
-          setHighlightedId(currentQuestion.targetId); 
+          setHighlightedId(question.targetId); 
           setTimeout(() => {
              setHighlightedId(null);
              generateLocationQuestion();
