@@ -234,14 +234,17 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
     if ('type' in activeTarget) targetName = activeTarget.name;
     else targetName = activeTarget.Name;
 
-    if (inputName.trim().toLowerCase() === targetName.toLowerCase()) {
+    const normalizedInput = inputName.trim().toLowerCase();
+    const normalizedTarget = targetName.trim().toLowerCase();
+
+    if (normalizedInput === normalizedTarget) {
       setFoundIds(prev => new Set(prev).add(targetName));
       setScore(s => s + 1);
       triggerSuccess();
       setActiveTarget(null); 
     } else {
       triggerFailure();
-      alert(`Incorrect! That was NOT ${inputName}.`); 
+      alert(`Incorrect! You typed "${inputName}". We were looking for "${targetName}".`); 
     }
   };
 

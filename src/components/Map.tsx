@@ -3,20 +3,8 @@ import 'leaflet/dist/leaflet.css';
 import { LatLngExpression, DomEvent } from 'leaflet';
 import { Province, City } from '../types';
 import type { FeatureCollection } from 'geojson';
-
-// Fix for default marker icon in React-Leaflet
 import L from 'leaflet';
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
-let DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41]
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
 
 interface MapProps {
   provinces: FeatureCollection | null;
@@ -29,6 +17,40 @@ interface MapProps {
 
 const CANADA_CENTER: LatLngExpression = [60.10867, -113.64258]; // Approximate center
 const ZOOM_LEVEL = 3;
+
+// --- Custom Icons ---
+// Simple SVG pin
+const PinIcon = ({ color }: { color: string }) => `
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color}" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8 drop-shadow-md">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+    <circle cx="12" cy="10" r="3"></circle>
+  </svg>
+`;
+
+const DefaultIcon = L.divIcon({
+  className: 'custom-pin-icon',
+  html: PinIcon({ color: '#3b82f6' }), // Blue-500
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32]
+});
+
+const HighlightIcon = L.divIcon({
+  className: 'custom-pin-icon',
+  html: PinIcon({ color: '#f97316' }), // Orange-500
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32]
+});
+
+const FoundIcon = L.divIcon({
+  className: 'custom-pin-icon',
+  html: PinIcon({ color: '#22c55e' }), // Green-500
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32]
+});
+
 
 export default function CanadaMap({ provinces, cities, onProvinceClick, onCityClick, highlightedProvinceId, foundIds }: MapProps) {
   return (
@@ -50,41 +72,34 @@ export default function CanadaMap({ provinces, cities, onProvinceClick, onCityCl
           style={(feature) => {
              const props = feature?.properties || {};
              const id = props.id || props.PRUID || props.name;
-             const isHighlighted = highlightedProvinceId && (id === highlightedProvinceId || props.name === highlightedProvinceId);
-             const isFound = foundIds?.has(props.name);
+             const name = props.name || props.PRENAME || "Unknown";
+             const isHighlighted = highlightedProvinceId && (id === highlightedProvinceId || name === highlightedProvinceId);
+             const isFound = foundIds?.has(name);
 
              // Color logic: Found = Green, Highlighted = Orange (for questions), Default = White
              let fillColor = '#ffffff';
              if (isFound) fillColor = '#86efac'; // Pale green
              else if (isHighlighted) fillColor = '#f97316'; // Orange (Identify Mode Target)
-             // Note: Identify mode traditionally uses Red for highlight? User asked for Orange for cities, what about map? 
-             // "highlighted city should be different colour... say orange". 
-             // "When a province or territory has been properly select it should also turn a pale shade of green."
-
+             
              return {
                fillColor: fillColor,
                weight: isHighlighted ? 2 : 1,
                opacity: 1,
                color: isHighlighted ? '#c2410c' : '#94a3b8',
-               fillOpacity: isHighlighted || isFound ? 0.6 : 0.4
+               fillOpacity: isHighlighted || isFound ? 0.6 : 0.4,
+               className: (onProvinceClick && !isFound) ? 'cursor-pointer hover:opacity-80 transition-opacity duration-200' : ''
              };
           }}
           onEachFeature={(feature, layer) => {
              const props = feature.properties || {};
              const p: Province = {
                 id: props.id || props.PRUID,
-                name: props.name,
+                name: props.name || props.PRENAME || "Unknown",
                 type: 'Province', 
              };
              const isFound = foundIds?.has(p.name);
              
-             // Only allow click if interaction is enabled AND not already found (unless we want to show info?)
-             // User said: "provinces and territories aren't selectable when clicking within a boundary" -> Fixed by adding onProvinceClick logic
-             // "green entity is clicked it should simply display a tooltip" (Todo)
-             
              if (onProvinceClick && !isFound) {
-                // @ts-ignore
-                layer._path.style.cursor = 'pointer'; 
                 layer.on({
                   click: (e) => {
                     DomEvent.stopPropagation(e); // Prevent map click?
@@ -103,20 +118,23 @@ export default function CanadaMap({ provinces, cities, onProvinceClick, onCityCl
         const isHighlighted = highlightedProvinceId === city.Name; 
         const isFound = foundIds?.has(city.Name);
         
-        // Todo: Custom icons for stars vs dots? Leaflet default is blue marker.
-        // We can change color via CSS filters or custom icon. 
-        // Quick hack: Opacity/Color logic via props isn't enough for Marker color.
-        
+        // Determine icon based on state
+        let icon = DefaultIcon;
+        if (isFound) icon = FoundIcon;
+        else if (isHighlighted) icon = HighlightIcon;
+        // else if (highlightedProvinceId) icon = FadedIcon? No, just keep default opacity logic.
+
         return (
         <Marker 
           key={city.Name} 
           position={[city.Latitude, city.Longitude]}
+          icon={icon}
           eventHandlers={{
             click: () => {
                 if (!isFound) onCityClick?.(city);
             }
           }}
-          opacity={isFound ? 0.8 : (highlightedProvinceId ? (isHighlighted ? 1 : 0.5) : 1)}
+          opacity={isFound ? 1 : (highlightedProvinceId ? (isHighlighted ? 1 : 0.4) : 1)}
         >
           {/* Show name only if completed or if Identify mode reveals it */}
           {(isFound) && <Popup>{city.Name}</Popup>}
