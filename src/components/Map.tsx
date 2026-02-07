@@ -68,6 +68,7 @@ export default function CanadaMap({ provinces, cities, onProvinceClick, onCityCl
       {/* Provinces Layer */}
       {provinces && (
         <GeoJSON 
+          key={`provinces-${foundIds?.size || 0}-${highlightedProvinceId || 'none'}`}
           data={provinces} 
           style={(feature) => {
              const props = feature?.properties || {};
