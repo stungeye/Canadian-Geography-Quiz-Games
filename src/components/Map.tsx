@@ -47,13 +47,13 @@ export default function CanadaMap({ provinces, cities, onProvinceClick, onCityCl
       {/* Cities Layer */}
       {cities?.map(city => (
         <Marker 
-          key={city.name} 
-          position={[city.lat, city.lng]}
+          key={city.Name} 
+          position={[city.Latitude, city.Longitude]}
           eventHandlers={{
             click: () => onCityClick?.(city)
           }}
         >
-          <Popup>{city.name}</Popup>
+          <Popup>{city.Name}</Popup>
         </Marker>
       ))}
     </MapContainer>

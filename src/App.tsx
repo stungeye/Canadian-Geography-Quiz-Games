@@ -1,9 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Map from './components/Map';
-import { MOCK_CITIES, MOCK_PROVINCES_GEOJSON } from './data/mock';
+import { CITIES, getProvinces } from './data/data';
+import type { FeatureCollection } from 'geojson';
 
 function App() {
   const [gameMode, setGameMode] = useState<string | null>(null);
+  const [provinces, setProvinces] = useState<FeatureCollection | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getProvinces().then(data => {
+      setProvinces(data);
+      setLoading(false);
+    }).catch(err => {
+      console.error("Failed to load map data", err);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-slate-50 text-slate-600">
+        Loading Map Data...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -46,8 +67,8 @@ function App() {
             <h2 className="text-xl font-bold mb-4 capitalize">{gameMode} Mode</h2>
             <div className="h-96 bg-blue-50 flex items-center justify-center border-2 border-dashed border-blue-200 text-blue-400 overflow-hidden relative">
                <Map 
-                 cities={MOCK_CITIES} 
-                 provinces={MOCK_PROVINCES_GEOJSON} 
+                 cities={CITIES} 
+                 provinces={provinces} 
                />
                <div className="absolute top-2 right-2 bg-white/80 p-2 rounded text-xs text-slate-500 pointer-events-none">
                  mode: {gameMode}

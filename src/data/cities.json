@@ -1,0 +1,114 @@
+[
+  {
+    "Name": "Ottawa",
+    "Prov_Ter": "Canada",
+    "Population": 994837,
+    "Latitude": 45.42,
+    "Longitude": -75.7,
+    "Capital": "FEDERAL"
+  },
+  {
+    "Name": "Victoria",
+    "Prov_Ter": "British Columbia",
+    "Population": 92141,
+    "Latitude": 48.43,
+    "Longitude": -123.37,
+    "Capital": "PROVINCIAL"
+  },
+  {
+    "Name": "Edmonton",
+    "Prov_Ter": "Alberta",
+    "Population": 981280,
+    "Latitude": 53.54,
+    "Longitude": -113.49,
+    "Capital": "PROVINCIAL"
+  },
+  {
+    "Name": "Regina",
+    "Prov_Ter": "Saskatchewan",
+    "Population": 228928,
+    "Latitude": 50.45,
+    "Longitude": -104.59,
+    "Capital": "PROVINCIAL"
+  },
+  {
+    "Name": "Winnipeg",
+    "Prov_Ter": "Manitoba",
+    "Population": 749534,
+    "Latitude": 49.9,
+    "Longitude": -97.14,
+    "Capital": "PROVINCIAL"
+  },
+  {
+    "Name": "Toronto",
+    "Prov_Ter": "Ontario",
+    "Population": 2794356,
+    "Latitude": 43.65,
+    "Longitude": -79.39,
+    "Capital": "PROVINCIAL"
+  },
+  {
+    "Name": "Quebec City",
+    "Prov_Ter": "Quebec",
+    "Population": 542298,
+    "Latitude": 46.31,
+    "Longitude": -71.21,
+    "Capital": "PROVINCIAL"
+  },
+  {
+    "Name": "Fredericton",
+    "Prov_Ter": "New Brunswick",
+    "Population": 58220,
+    "Latitude": 45.96,
+    "Longitude": -66.64,
+    "Capital": "PROVINCIAL"
+  },
+  {
+    "Name": "Charlottetown",
+    "Prov_Ter": "Prince Edward Island",
+    "Population": 36094,
+    "Latitude": 46.24,
+    "Longitude": -63.13,
+    "Capital": "PROVINCIAL"
+  },
+  {
+    "Name": "Halifax",
+    "Prov_Ter": "Nova Scotia",
+    "Population": 439819,
+    "Latitude": 44.65,
+    "Longitude": -63.58,
+    "Capital": "PROVINCIAL"
+  },
+  {
+    "Name": "St. John's",
+    "Prov_Ter": "Newfoundland and Labrador",
+    "Population": 113948,
+    "Latitude": 47.56,
+    "Longitude": -52.72,
+    "Capital": "PROVINCIAL"
+  },
+  {
+    "Name": "Iqaluit",
+    "Prov_Ter": "Nunavut",
+    "Population": 38780,
+    "Latitude": 63.75,
+    "Longitude": -68.51,
+    "Capital": "TERRITORIAL"
+  },
+  {
+    "Name": "Yellowknife",
+    "Prov_Ter": "Northwest Territories",
+    "Population": 19569,
+    "Latitude": 62.46,
+    "Longitude": -114.38,
+    "Capital": "TERRITORIAL"
+  },
+  {
+    "Name": "Whitehorse",
+    "Prov_Ter": "Yukon",
+    "Population": 25085,
+    "Latitude": 60.72,
+    "Longitude": -135.11,
+    "Capital": "TERRITORIAL"
+  }
+]

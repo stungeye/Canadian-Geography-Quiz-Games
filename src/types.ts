@@ -1,16 +1,16 @@
 export interface Province {
-  id: string; // e.g., 'ON', 'QC'
+  id: string; // Likely from GeoJSON properties
   name: string;
-  type: 'Province' | 'Territory';
-  capital: string; // Name of the capital city
+  type: 'Province' | 'Territory'; // We might derive this
 }
 
 export interface City {
-  name: string;
-  provinceId: string;
-  lat: number;
-  lng: number;
-  isCapital: boolean;
+  Name: string;
+  Prov_Ter: string;
+  Population: number;
+  Latitude: number;
+  Longitude: number;
+  Capital: 'FEDERAL' | 'PROVINCIAL' | 'TERRITORIAL';
 }
 
 export interface GameState {
