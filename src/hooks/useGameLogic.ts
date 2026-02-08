@@ -30,6 +30,7 @@ interface UseGameLogicProps {
 }
 
 import { useFeedback } from './useFeedback';
+import { normalizeInput } from '../utils/stringUtils';
 
 export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicProps) {
   const [score, setScore] = useState(0);
@@ -71,12 +72,6 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
     });
 
     const validCities = CITIES.filter(c => !currentFoundIds.has(c.Name));
-
-    console.log('generateIdentifyQuestion:', { 
-        foundCount: currentFoundIds.size, 
-        validProvinces: validProvinces.length, 
-        validCities: validCities.length 
-    });
 
     if (validProvinces.length === 0 && validCities.length === 0) {
         setGameStatus('finished');
@@ -154,12 +149,6 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
     });
 
     const validCities = CITIES.filter(c => !currentFoundIds.has(c.Name));
-
-    console.log('generateLocationQuestion:', { 
-        foundCount: currentFoundIds.size, 
-        validProvinces: validProvinces.length, 
-        validCities: validCities.length 
-    });
 
     if (validProvinces.length === 0 && validCities.length === 0) {
         setGameStatus('finished');
@@ -259,9 +248,7 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
       const status = gameStatusRef.current;
       const question = currentQuestionRef.current;
       
-      console.log('handleLocationAnswer called', { mode, status, question, selected });
       if (mode !== 'locate' || !question || status !== 'playing') {
-          console.log('handleLocationAnswer early return', { mode, status, hasQuestion: !!question });
           return;
       }
 
@@ -271,11 +258,6 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
       else if ('Name' in selected) selectedName = selected.Name;
 
       if (foundIdsRef.current.has(selectedName)) return; // Ignore clicks on already found items
-
-      console.log('Mode 3 Check:', { 
-        selected, 
-        question 
-      });
 
       let isCorrect = false;
       if ('type' in selected && selected.type === 'Province') {
@@ -328,8 +310,8 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
     if ('type' in activeTarget) targetName = activeTarget.name;
     else targetName = activeTarget.Name;
 
-    const normalizedInput = inputName.trim().toLowerCase();
-    const normalizedTarget = targetName.trim().toLowerCase();
+    const normalizedInput = normalizeInput(inputName);
+    const normalizedTarget = normalizeInput(targetName);
 
     if (normalizedInput === normalizedTarget) {
       setFoundIds(prev => new Set(prev).add(targetName));
