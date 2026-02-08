@@ -49,14 +49,16 @@ function App() {
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <header className="bg-red-600 text-white p-4 shadow-md z-50 relative">
         <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold">🇨🇦 Canadian Geography</h1>
-          <nav>
+          <h1 className="sm:ml-4 text-2xl font-bold">🇨🇦 <span className="hidden sm:inline">Canadian</span> Geography Quiz</h1>
+          <nav className="sm:mr-4">
+            {gameMode && (
             <button 
               onClick={() => setGameMode(null)}
-              className="text-white hover:text-red-100 font-semibold"
+              className="rounded-full px-4 py-2 text-sm font-semibold text-white bg-white/30 border border-white/30 hover:bg-white/50 transition"
             >
-              Home
+              New Game
             </button>
+            )}
           </nav>
         </div>
       </header>
@@ -153,7 +155,7 @@ function App() {
       </main>
 
       <footer className="bg-slate-800 text-slate-300 p-4 text-center">
-        <p>&copy; {new Date().getFullYear()} Canadian Geography Learning</p>
+        <p><a href="https://github.com/stungeye/Canadian-Geography-Quiz-Games">{new Date().getFullYear()} Canadian Geography Quiz on Github</a></p>
       </footer>
     </div>
   );
