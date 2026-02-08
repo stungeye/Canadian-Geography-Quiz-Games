@@ -68,19 +68,19 @@ function App() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
             {/* Game Mode Selection Cards */}
             <ModeCard 
-              title="Identify" 
-              description="Learn to identify provinces and capitals."
+              title="✅ Identify" 
+              description="Multiple choice selection of provinces, territories, and cities."
               onClick={() => setGameMode('identify')}
             />
             {/* ... other cards ... */}
             <ModeCard 
-              title="Recall" 
-              description="Type the names of cities and provinces."
+              title="✍️ Recall" 
+              description="Type the names of cities, provinces, and territories."
               onClick={() => setGameMode('recall')}
             />
             <ModeCard 
-              title="Locate" 
-              description="Find locations on the map."
+              title="📍 Locate" 
+              description="Find cities, provinces, and territories on the map."
               onClick={() => setGameMode('locate')}
             />
           </div>
