@@ -165,9 +165,9 @@ function ModeCard({ title, description, onClick }: { title: string, description:
   return (
     <button 
       onClick={onClick}
-      className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow text-left border border-slate-200 hover:border-red-300 group"
+      className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow text-left border border-slate-200 hover:border-blue-300 group"
     >
-      <h3 className="text-xl font-bold text-slate-800 group-hover:text-red-600 mb-2">{title}</h3>
+      <h3 className="text-xl font-bold text-slate-800 group-hover:text-blue-600 mb-2">{title}</h3>
       <p className="text-slate-600">{description}</p>
     </button>
   );
