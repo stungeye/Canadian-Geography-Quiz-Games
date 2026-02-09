@@ -25,7 +25,7 @@ interface RecallState {
 
 interface UseGameLogicProps {
   provinces: FeatureCollection | null;
-  mode: 'identify' | 'recall' | 'locate';
+  mode: 'identify' | 'recall' | 'locate' | null;
   optionCount?: number; 
 }
 
@@ -201,13 +201,19 @@ export function useGameLogic({ provinces, mode, optionCount = 4 }: UseGameLogicP
     }
     // Reset when mode changes
     if (mode !== gameModeRef.current) {
+        const newFoundIds = new Set<string>();
+        setFoundIds(newFoundIds);
+        foundIdsRef.current = newFoundIds; // Update ref immediately for generators
+        
+        setScore(0);
+        setGameStatus('playing');
+        setCurrentQuestion(null);
+        setHighlightedId(null);
+        setActiveTarget(null);
+        
         if (mode === 'identify') generateIdentifyQuestion();
         if (mode === 'locate') generateLocationQuestion();
-        // Reset found state on mode change? Or persist? 
-        // User implied "in this mode cities that have already been selected". 
-        // Let's reset for now to simulate a fresh game per mode, or keep it if they switch back and forth?
-        // Usually games reset.
-        setFoundIds(new Set());
+        
         gameModeRef.current = mode;
     }
   }, [provinces, mode, generateIdentifyQuestion, generateLocationQuestion]);

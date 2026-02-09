@@ -12,6 +12,8 @@ export function normalizeInput(input: string): string {
     .toLowerCase()
     // Replace smart single quotes
     .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
-    // Replace smart double quotes (optional but good practice)
-    .replace(/[\u201C\u201D\u201E\u201F]/g, '"');
+    // Replace smart double quotes
+    .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+    // Remove punctuation like periods for better matching (e.g., St. John's -> St Johns)
+    .replace(/[.]/g, ''); 
 }

@@ -24,7 +24,7 @@ function App() {
     foundIds
   } = useGameLogic({ 
     provinces, 
-    mode: gameMode as 'identify' | 'recall' | 'locate' || 'identify' 
+    mode: gameMode as 'identify' | 'recall' | 'locate' | null 
   });
 
   useEffect(() => {
